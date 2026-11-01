@@ -6,8 +6,6 @@ on:
 
 jobs:
   test:
-    # Self-hosted runner = your own PC (so localhost works).
-    # If you use a tunnel instead, change this to: ubuntu-latest
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -26,27 +24,10 @@ jobs:
           REPORT_URL: ${{ secrets.REPORT_URL }}
         run: python scripts/send_report.py
 
-      # ---- Bonus: email (delete this step if you skip the bonus) ----
-      - name: Email report
-        if: always()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          to: ${{ secrets.REPORT_EMAIL_TO }}
-          from: CI Report Bot
-          subject: "Test run ${{ steps.tests.outcome }} - ${{ github.sha }}"
-          body: file://email_body.txt
-          attachments: report.json
-
       - name: Fail the stage if tests failed
         if: steps.tests.outcome == 'failure'
         run: exit 1
 
-  # ---- Bonus: deploy to GitHub Pages only if tests passed ----
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main'
