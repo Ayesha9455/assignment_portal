@@ -1,0 +1,7 @@
+__pycache__/
+.pytest_cache/
+submissions.json
+testreport.json
+results.xml
+report.json
+email_body.txt

@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+
+jobs:
+  test:
+    # Self-hosted runner = your own PC (so localhost works).
+    # If you use a tunnel instead, change this to: ubuntu-latest
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run tests
+        id: tests
+        continue-on-error: true
+        run: python -m pytest -v --junitxml=results.xml
+
+      - name: Send report to local receiver
+        if: always()
+        env:
+          REPORT_URL: ${{ secrets.REPORT_URL }}
+        run: python scripts/send_report.py
+
+      # ---- Bonus: email (delete this step if you skip the bonus) ----
+      - name: Email report
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          to: ${{ secrets.REPORT_EMAIL_TO }}
+          from: CI Report Bot
+          subject: "Test run ${{ steps.tests.outcome }} - ${{ github.sha }}"
+          body: file://email_body.txt
+          attachments: report.json
+
+      - name: Fail the stage if tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
+
+  # ---- Bonus: deploy to GitHub Pages only if tests passed ----
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deployment
+        uses: actions/deploy-pages@v4
