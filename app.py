@@ -269,7 +269,7 @@ def is_valid_url(url):
 
 def validate(data):
     errors = []
-    labels = {"name": "Name",
+    labels = {"name": "Name","reg_no": "Registration number",
               "title": "Assignment title", "url": "Submission URL"}
     for key, label in labels.items():
         if not data.get(key, "").strip():
